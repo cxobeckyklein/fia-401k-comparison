@@ -1,24 +1,21 @@
-import streamlit as st
+
 import numpy as np
 import pandas as pd
 
-# S&P 500 price returns from 2003 to 2022
+# Define S&P 500 price returns from 2003 to 2022
 sp500_returns_2003_2022 = [
     0.2638, 0.0899, 0.0300, 0.1362, 0.0310, -0.3849, 0.2345, 0.1284, 0.0000, 0.1351,
     0.2960, 0.1139, -0.0007, 0.0954, 0.1922, -0.0624, 0.2888, 0.1633, 0.2651, -0.1954
 ]
 
 def get_user_inputs():
-    st.title("FIA vs 401(k) Comparison Tool")
-
-    premium = st.number_input("Enter Starting Balance", min_value=0.0, value=1000000.0, step=10000.0)
-    pr_start = st.number_input("Starting FIA Participation Rate", 0.0, 1.0, 1.0, 0.01)
-    pr_end = st.number_input("Ending FIA Participation Rate", 0.0, 1.0, 0.35, 0.01)
-    floor = st.number_input("FIA Floor Rate", 0.0, 0.10, 0.0, 0.01)
-    fee = st.number_input("401(k) Annual Fee", 0.0, 0.05, 0.02, 0.005)
-    inflation = st.number_input("Annual Inflation Rate", 0.0, 0.1, 0.03, 0.005)
-    tax = st.number_input("Tax Rate on RMDs", 0.0, 0.5, 0.30, 0.01)
-
+    premium = float(input("Enter starting balance (e.g., 1000000): "))
+    pr_start = float(input("Enter starting FIA participation rate (e.g., 1.0 for 100%): "))
+    pr_end = float(input("Enter ending FIA participation rate (e.g., 0.35 for 35%): "))
+    floor = float(input("Enter FIA floor rate (e.g., 0.0): "))
+    fee = float(input("Enter 401(k) annual fee drag (e.g., 0.02 for 2%): "))
+    inflation = float(input("Enter annual inflation rate (e.g., 0.03 for 3%): "))
+    tax = float(input("Enter tax rate on RMDs (e.g., 0.30 for 30%): "))
     return premium, pr_start, pr_end, floor, fee, inflation, tax
 
 def compound_growth(start, returns):
@@ -36,22 +33,22 @@ def calculate_rmds(balances, ages, tax_rate, inflation_rate):
             12.9, 12.2, 11.5, 10.8, 10.1, 9.5
         ])
     }
-
     start_bal, rmd, net_rmd, infl_adj_rmd = [], [], [], []
     infl_factor = 1.0
     for i, age in enumerate(ages):
         bal = balances[i]
-        dist = bal / rmd_divisors[age] if age in rmd_divisors else 0
-        net = dist * (1 - tax_rate)
         start_bal.append(bal)
+        dist = bal / rmd_divisors[age] if age in rmd_divisors else 0
         rmd.append(dist)
+        net = dist * (1 - tax_rate)
         net_rmd.append(net)
         infl_adj_rmd.append(net / infl_factor)
         infl_factor *= (1 + inflation_rate)
     return start_bal, rmd, net_rmd, infl_adj_rmd
 
-# 🔄 Main app logic
 def run_simulation():
+    ages = list(range(55, 95))
+    years = list(range(1, 41))
     premium, pr_start, pr_end, floor, fee, inflation_rate, tax_rate = get_user_inputs()
 
     returns_40yr = sp500_returns_2003_2022 * 2
@@ -62,30 +59,24 @@ def run_simulation():
     fia_bal = compound_growth(premium, fia_returns)
     k401_bal = compound_growth(premium, k401_returns)
 
-    ages = list(range(55, 95))
-    years = list(range(1, 41))
-
     fia_start, fia_rmd, fia_net, fia_adj = calculate_rmds(fia_bal, ages, tax_rate, inflation_rate)
     k401_start, k401_rmd, k401_net, k401_adj = calculate_rmds(k401_bal, ages, tax_rate, inflation_rate)
 
     df = pd.DataFrame({
         "Year": years,
         "Age": ages,
-        "FIA Start Balance": fia_start,
-        "FIA RMD": fia_rmd,
-        "FIA After-Tax RMD": fia_net,
-        "FIA Infl-Adj RMD": fia_adj,
-        "401k Start Balance": k401_start,
-        "401k RMD": k401_rmd,
-        "401k After-Tax RMD": k401_net,
-        "401k Infl-Adj RMD": k401_adj,
+        "FIA Start Balance": [f"${v:,.0f}" for v in fia_start],
+        "FIA RMD": [f"${v:,.0f}" for v in fia_rmd],
+        "FIA After-Tax RMD": [f"${v:,.0f}" for v in fia_net],
+        "FIA Infl-Adj RMD": [f"${v:,.0f}" for v in fia_adj],
+        "401k Start Balance": [f"${v:,.0f}" for v in k401_start],
+        "401k RMD": [f"${v:,.0f}" for v in k401_rmd],
+        "401k After-Tax RMD": [f"${v:,.0f}" for v in k401_net],
+        "401k Infl-Adj RMD": [f"${v:,.0f}" for v in k401_adj],
     })
 
-    st.dataframe(df.style.format("${:,.0f}"))
+    df.to_csv("C:/Users/Becky/OneDrive/Documents/Insurance Agent Stuff/Marketing/401k_campaign/401k_FIA_interactive/fia_vs_401k_output.csv", index=False)
+print("Output saved to: C:/Users/Becky/OneDrive/Documents/Insurance Agent Stuff/Marketing/401k_campaign/401k_FIA_interactive/")
 
-    csv = df.to_csv(index=False).encode("utf-8")
-    st.download_button("Download Results as CSV", csv, "fia_vs_401k_results.csv", "text/csv")
-
-# ✅ This ensures Streamlit executes this when running
 if __name__ == "__main__":
     run_simulation()
