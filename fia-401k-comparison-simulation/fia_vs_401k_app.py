@@ -47,22 +47,9 @@ def calculate_rmds(balances, ages, tax_rate, inflation_rate):
         infl_factor *= (1 + inflation_rate)
     return start_bal, rmd, net_rmd, infl_adj_rmd
 
-# MAIN app starts here
-
-
-art,
-        "FIA RMD": fia_rmd,
-        "FIA After-Tax RMD": fia_net,
-        "FIA Infl-Adj RMD": fia_adj,
-        "401k Start Balance": k401_start,
-        "401k RMD": k401_rmd,
-        "401k After-Tax RMD": k401_net,
-        "401k Infl-Adj RMD": k401_adj,
-    })
-
-    def run_simulation():
+def run_simulation():
     st.title("FIA vs 401(k) Comparison Tool")
-   
+
     if st.button("Run Simulation"):
         ages = list(range(55, 95))
         years = list(range(1, 41))
@@ -94,7 +81,9 @@ art,
 
         st.dataframe(df.style.format("${:,.0f}"))
 
-    # csv = df.to_csv(index=False).encode('utf-8')
-    # st.download_button("Download CSV", csv, "fia_vs_401k_results.csv", "text/csv")
-    run_simulation()
+        csv = df.to_csv(index=False).encode('utf-8')
+        st.download_button("Download CSV", csv, "fia_vs_401k_results.csv", "text/csv")
 
+# Execute the app
+if __name__ == "__main__":
+    run_simulation()
